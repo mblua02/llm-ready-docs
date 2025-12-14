@@ -1,5 +1,8 @@
 # MuleSoft Agent Fabric Compendium
 
+**Document Version:** 1.1
+**Last Updated:** December 14, 2025
+
 ## Table of Contents
 
 1. [Executive Summary](#1-executive-summary)
@@ -372,10 +375,11 @@ flowchart LR
 |---------|----------------------|------------------------------|
 | **Primary Role** | Delegation to a Peer | Execution of a Tool |
 | **Intelligence** | "Thinker" (Has its own LLM/Reasoning) | "Doer" (Standard computer program) |
-| **Interaction** | Prompt/Response (Conversation) | Input/Output (Function Call) |
-| **Protocol Base** | JSON RPC | Tool Use Standard |
-| **Discovery** | Agent Cards via well-known URL | Tool definitions in configuration |
+| **Interaction Modes** | Sync request/response, Streaming (SSE), Async push notifications | Input/Output (Function Call) |
+| **Protocol Base** | JSON-RPC 2.0 over HTTP(S) | Tool Use Standard |
+| **Discovery** | Agent Cards at `/.well-known/agent-card.json` | Tool definitions in configuration |
 | **Example** | Requesting a "Badging Agent" to generate a badge | Using a "Calculator" to multiply numbers |
+| **Origin** | Google → Linux Foundation (Open Standard) | Anthropic (Open Standard) |
 
 **Source:** [[SRC-ORCHESTRATE](#src-orchestrate)]
 
@@ -826,13 +830,19 @@ flowchart LR
 - **Use Cases:** Calculators, database queries, IoT controllers
 - **Support:** Anypoint Connector for MCP, governed by Flex Gateway
 
-#### Agent2Agent Protocol (A2A) [[SRC-ORCHESTRATE](#src-orchestrate)], [[SRC-DOCS]](#src-docs)
+#### Agent2Agent Protocol (A2A) [[SRC-ORCHESTRATE](#src-orchestrate)], [[SRC-DOCS](#src-docs)], [[SRC-A2A-OFFICIAL]](#src-a2a-official)
 
-- **Purpose:** Vendor-neutral protocol for peer-to-peer communication between agents
-- **Communication:** Conversational—prompt/response interactions
-- **Discovery:** Agent Cards (JSON descriptions) at well-known URL suffix
-- **Technical Implementation:** JSON RPC for API calls
+- **Purpose:** Open protocol (originally Google, now Linux Foundation) for peer-to-peer communication between opaque AI agents
+- **Communication:** Three modes supported:
+  - Synchronous request/response
+  - Streaming via Server-Sent Events (SSE)
+  - Asynchronous push notifications
+- **Discovery:** Agent Cards (JSON) at `/.well-known/agent-card.json` (per RFC 8615)
+- **Technical Implementation:** JSON-RPC 2.0 over HTTP(S)
 - **Support:** Anypoint Connector for A2A, governed by Flex Gateway
+- **MuleSoft A2A Connector:** Version 0.4.0-BETA (for Mule 4)
+- **Ecosystem:** IBM ACP (incorporated), Cisco agntcy (leverages), Google ADK (build with)
+- **A2A Protocol Version:** v0.3.0 (July 2025)
 
 ```mermaid
 flowchart TB
@@ -1084,10 +1094,10 @@ All six sources consistently agree on these fundamental concepts:
 #### A2A (Agent-to-Agent) Protocol [[SRC-ORCHESTRATE](#src-orchestrate)]
 
 ```
-Protocol Type: Peer-to-Peer Communication
-Transport: HTTP/JSON RPC
-Discovery: Agent Cards at /.well-known/agent-card
-Communication: Prompt/Response (Conversational)
+Protocol Type: Peer-to-Peer Communication (Open Standard - Linux Foundation)
+Transport: JSON-RPC 2.0 over HTTP(S)
+Discovery: Agent Cards at /.well-known/agent-card.json (RFC 8615)
+Communication: Sync, Streaming (SSE), Async Push Notifications
 Use Case: Delegation to agents with reasoning capabilities
 
 Request Flow:
@@ -1096,23 +1106,50 @@ Request Flow:
 3. Agent returns reasoned response
 4. Broker synthesizes into final output
 
-Agent Card Structure:
+Agent Card Structure (per a2a-protocol.org specification):
 {
   "name": "Badging Agent",
   "description": "Handles employee badge requests",
-  "capabilities": ["create_badge", "revoke_badge"],
-  "endpoint": "https://agent.example.com/a2a",
-  "version": "1.0.0"
+  "provider": { "organization": "ACME Corp" },
+  "url": "https://agent.example.com/a2a",
+  "version": "1.0.0",
+  "capabilities": {
+    "streaming": true,
+    "pushNotifications": false
+  },
+  "authentication": {
+    "schemes": ["Bearer"]
+  },
+  "skills": [
+    {
+      "id": "create_badge",
+      "name": "Create Badge",
+      "description": "Creates a new employee badge",
+      "inputModes": ["text"],
+      "outputModes": ["text", "file"],
+      "examples": ["Create a badge for John Smith"]
+    }
+  ]
 }
 ```
 
-#### MCP (Model Context Protocol) [[SRC-ORCHESTRATE](#src-orchestrate)]
+#### MCP (Model Context Protocol) [[SRC-ORCHESTRATE](#src-orchestrate)], [[SRC-MCP-OFFICIAL]](#src-mcp-official)
+
+MCP is an **open-source standard** for connecting AI applications to external systems. Developed by Anthropic and available at [modelcontextprotocol.io](https://modelcontextprotocol.io/).
+
+> *"Think of MCP like a USB-C port for AI applications. Just as USB-C provides a standardized way to connect electronic devices, MCP provides a standardized way to connect AI applications to external systems."* — [MCP Official Docs](https://modelcontextprotocol.io/)
 
 ```
-Protocol Type: Tool Use Standard
-Transport: HTTP/JSON
+Protocol Type: Open Standard for AI-to-External-System Connection
+Origin: Anthropic (Open Source)
+Transport: HTTP/JSON (Streamable HTTP, SSE supported)
 Communication: Input/Output (Function Call)
-Use Case: Deterministic execution without LLM reasoning
+Use Case: Connect AI apps to data sources, tools, and workflows
+
+Components:
+- Data Sources: Local files, databases, APIs
+- Tools: Search engines, calculators, specialized functions
+- Workflows: Specialized prompts, orchestrations
 
 Request Flow:
 1. Broker identifies need for specific tool
@@ -1134,6 +1171,33 @@ MCP Schema Structure:
   ]
 }
 ```
+
+**MCP Ecosystem Benefits:**
+- **Developers:** Reduces development time and complexity for AI integrations
+- **AI Applications:** Provides access to ecosystem of data sources, tools, and apps
+- **End-users:** Results in more capable AI applications that access data and take actions
+
+#### Complementary Protocols and Frameworks [[SRC-A2A-OFFICIAL](#src-a2a-official)]
+
+The A2A ecosystem includes several complementary protocols and frameworks:
+
+| Protocol/Framework | Relationship | Description |
+|--------------------|--------------|-------------|
+| **IBM ACP** | Incorporated into A2A | IBM's Agent Communication Protocol has been merged into the A2A specification |
+| **Cisco agntcy** | Leverages A2A + MCP | Framework providing "Internet of Agents" components with discovery, group communication, identity, and observability |
+| **Google ADK** | Build with A2A | Agent Development Kit for building A2A-compliant agents |
+
+#### Official A2A SDKs [[SRC-A2A-OFFICIAL](#src-a2a-official)]
+
+The A2A Protocol provides official SDKs in multiple languages:
+
+| Language | Installation | Repository |
+|----------|--------------|------------|
+| **Python** | `pip install a2a-sdk` | [a2a-python](https://github.com/a2aproject/a2a-python) |
+| **Go** | `go get github.com/a2aproject/a2a-go` | [a2a-go](https://github.com/a2aproject/a2a-go) |
+| **JavaScript** | `npm install @a2a-js/sdk` | [a2a-js](https://github.com/a2aproject/a2a-js) |
+| **Java** | Maven dependency | [a2a-java](https://github.com/a2aproject/a2a-java) |
+| **C#/.NET** | NuGet package | [a2a-dotnet](https://github.com/a2aproject/a2a-dotnet) |
 
 ### A.2 Integration Patterns
 
@@ -1395,6 +1459,8 @@ sequenceDiagram
 
 ### 13.1 Bibliography
 
+#### MuleSoft Agent Fabric Sources
+
 | Source ID | Title | URL | Type |
 |-----------|-------|-----|------|
 | <span id="src-discover">**[SRC-DISCOVER]**</span> | Between the Seams: Discover Agents with MuleSoft Agent Fabric | https://www.youtube.com/watch?v=5RhUac1SsSI | Video/Transcript |
@@ -1407,6 +1473,47 @@ sequenceDiagram
 | **[SRC-DOCS]** | Agent Fabric Learning Map | https://docs.mulesoft.com/agent-fabric/learning-map-agent-fabric | Official Docs |
 | **[SRC-DOCS]** | MuleSoft Agent Fabric Announcement | https://www.salesforce.com/news/stories/mulesoft-agent-fabric-announcement/ | Press Release |
 | **[SRC-DOCS]** | Agent Visualizer Documentation | https://docs.mulesoft.com/agent-visualizer/ | Official Docs |
+
+#### A2A Protocol Official Sources (Verified December 2025)
+
+| Source ID | Title | URL | Type |
+|-----------|-------|-----|------|
+| <span id="src-a2a-official">**[SRC-A2A-OFFICIAL]**</span> | A2A Protocol Official Documentation | https://a2a-protocol.org/latest/ | Official Docs |
+| **[SRC-A2A-OFFICIAL]** | A2A Protocol Specification | https://a2a-protocol.org/latest/specification/ | Technical Spec |
+| **[SRC-A2A-OFFICIAL]** | A2A Agent Discovery | https://a2a-protocol.org/latest/topics/agent-discovery/ | Official Docs |
+| **[SRC-A2A-OFFICIAL]** | A2A Enterprise Features | https://a2a-protocol.org/latest/topics/enterprise-ready/ | Official Docs |
+| **[SRC-A2A-OFFICIAL]** | A2A Key Concepts | https://a2a-protocol.org/latest/topics/key-concepts/ | Official Docs |
+| **[SRC-A2A-OFFICIAL]** | A2A and MCP Relationship | https://a2a-protocol.org/latest/topics/a2a-and-mcp/ | Official Docs |
+| **[SRC-A2A-OFFICIAL]** | A2A GitHub Repository | https://github.com/a2aproject/A2A | Source Code |
+
+#### MuleSoft A2A Connector Sources (Verified December 2025)
+
+| Source ID | Title | URL | Type |
+|-----------|-------|-----|------|
+| <span id="src-mulesoft-a2a">**[SRC-MULESOFT-A2A]**</span> | A2A Connector Documentation | https://docs.mulesoft.com/a2a-connector/latest/ | Official Docs |
+| **[SRC-MULESOFT-A2A]** | A2A Connector - Anypoint Exchange | https://www.mulesoft.com/exchange/com.mulesoft.connectors/mule4-a2a-connector/ | Exchange |
+
+#### MuleSoft MCP Connector Sources (Verified December 2025)
+
+| Source ID | Title | URL | Type |
+|-----------|-------|-----|------|
+| <span id="src-mulesoft-mcp">**[SRC-MULESOFT-MCP]**</span> | MCP Connector Documentation | https://docs.mulesoft.com/mcp-connector/latest/ | Official Docs |
+
+> **MuleSoft MCP Connector:** Version 1.3 (for Mule 4.9.6+). Enables MCP server and client capabilities in Mule applications. Supports Streamable HTTP (recommended) and SSE transport methods. Provides distributed tracing support.
+
+#### MCP Protocol Official Sources (Verified December 2025)
+
+| Source ID | Title | URL | Type |
+|-----------|-------|-----|------|
+| <span id="src-mcp-official">**[SRC-MCP-OFFICIAL]**</span> | Model Context Protocol Official Site | https://modelcontextprotocol.io/ | Official Docs |
+| **[SRC-MCP-OFFICIAL]** | MCP Specification | https://modelcontextprotocol.io/specification | Technical Spec |
+| **[SRC-MCP-OFFICIAL]** | MCP GitHub Repository | https://github.com/modelcontextprotocol | Source Code |
+
+> **Note:** MCP (Model Context Protocol) is an open-source standard developed by Anthropic. It provides a standardized way to connect AI applications to external data sources, tools, and workflows.
+
+> **Note:** The A2A Protocol was originally developed by Google and is now donated to the Linux Foundation as an open-source project (Apache License 2.0). Current version: v0.3.0 (July 2025). The protocol has 21k+ stars on GitHub and 131+ contributors.
+>
+> **MuleSoft A2A Connector:** Version 0.4.0-BETA (for Mule 4). This is a beta release providing support for the Agent2Agent protocol in MuleSoft applications.
 
 ### 13.2 Source Cross-Reference Table
 
@@ -1434,9 +1541,13 @@ Legend: ✓ = Mentioned, ✓✓ = Moderate coverage, ✓✓✓ = Deep coverage
 
 | Term | Definition | Source |
 |------|------------|--------|
-| **A2A (Agent-to-Agent)** | A vendor-neutral protocol using JSON RPC for peer-to-peer communication between agents | [[SRC-ORCHESTRATE]](#src-orchestrate) |
+| **A2A (Agent-to-Agent)** | An open protocol (originally by Google, now Linux Foundation) using JSON-RPC 2.0 over HTTP(S) for peer-to-peer communication between opaque AI agents. Supports sync, streaming (SSE), and async push notifications. Discovery via Agent Cards at `/.well-known/agent-card.json` | [[SRC-A2A-OFFICIAL]](#src-a2a-official) |
+| **A2A Connector (MuleSoft)** | MuleSoft connector for implementing A2A protocol in Mule 4 applications. Current version: 0.4.0-BETA | [[SRC-MULESOFT-A2A]](#src-mulesoft-a2a) |
+| **MCP Connector (MuleSoft)** | MuleSoft connector enabling MCP server/client capabilities in Mule 4.9.6+ apps. Current version: 1.3. Supports Streamable HTTP and SSE transport | [[SRC-MULESOFT-MCP]](#src-mulesoft-mcp) |
+| **A2A SDK** | Official Software Development Kits for implementing A2A protocol in Python, Go, JavaScript, Java, and C#/.NET | [[SRC-A2A-OFFICIAL]](#src-a2a-official) |
 | **Agent Broker** | An intelligent routing service that uses LLM to coordinate task delegation across agents and tools | [[SRC-ORCHESTRATE](#src-orchestrate), [SRC-DOCS](#src-docs)] |
-| **Agent Card** | The artifact representing an agent documented and published within Anypoint Exchange | [[SRC-GOVERN](#src-govern), [SRC-DOCS](#src-docs)] |
+| **Agent Card** | A JSON document serving as a digital "business card" for an A2A Server, containing identity, service endpoint, capabilities, authentication, and skills. Hosted at `/.well-known/agent-card.json` per RFC 8615 | [[SRC-A2A-OFFICIAL](#src-a2a-official), [SRC-GOVERN](#src-govern)] |
+| **AgentSkill** | Component of an Agent Card describing a specific capability with id, name, description, inputModes, outputModes, and examples | [[SRC-A2A-OFFICIAL]](#src-a2a-official) |
 | **Agent Fabric** | MuleSoft solution to discover, orchestrate, govern, and observe AI agents across an enterprise | All sources |
 | **Agent Network** | A coordinated group of brokers, agents, and MCP servers defined by a YAML template | [[SRC-DOCS]](#src-docs) |
 | **Agent Registry** | Extension of Anypoint Exchange serving as a single source of truth for agentic assets | [[SRC-DISCOVER]](#src-discover) |
@@ -1447,14 +1558,18 @@ Legend: ✓ = Mentioned, ✓✓ = Moderate coverage, ✓✓✓ = Deep coverage
 | **Anypoint Code Builder (ACB)** | IDE for creating Agent Network Projects using YAML definitions | [[SRC-DISCOVER](#src-discover), [SRC-DOCS](#src-docs)] |
 | **Anypoint Exchange** | Repository serving as the backend for Agent Registry | [[SRC-DISCOVER]](#src-discover) |
 | **Anypoint Insights** | Dashboard for high-level performance metrics (traffic, errors, latency) | [[SRC-OBSERVE]](#src-observe) |
+| **Cisco agntcy** | A framework providing "Internet of Agents" components with discovery, group communication, identity, and observability; leverages A2A and MCP | [[SRC-A2A-OFFICIAL]](#src-a2a-official) |
 | **CloudHub 2.0** | Runtime environment for deploying Agent Broker and related components | [[SRC-GOVERN](#src-govern), [SRC-ORCHESTRATE](#src-orchestrate)] |
 | **Context Rot** | Degradation of LLM performance due to overloading with irrelevant information | [[SRC-INTRO]](#src-intro) |
 | **Deterministic** | Processes with pre-coded, predictable paths (typical of APIs) | [[SRC-DISCOVER]](#src-discover) |
 | **Flex Gateway** | API gateway enforcing policies on agents and MCP servers | [[SRC-GOVERN](#src-govern), [SRC-DOCS](#src-docs)] |
+| **Google ADK** | Google's Agent Development Kit for building A2A-compliant agents | [[SRC-A2A-OFFICIAL]](#src-a2a-official) |
 | **Human-in-the-Loop (HITL)** | Pattern where automated agent pauses for human input or approval | [[SRC-INTRO](#src-intro), [SRC-DOCS](#src-docs)] |
+| **IBM ACP** | IBM's Agent Communication Protocol, now incorporated into the A2A Protocol specification | [[SRC-A2A-OFFICIAL]](#src-a2a-official) |
 | **Lifecycle State** | Metadata tag (Stable, Development) applied to assets in registry | [[SRC-DISCOVER]](#src-discover) |
+| **Linux Foundation** | Open-source foundation that now hosts the A2A Protocol (originally developed by Google) | [[SRC-A2A-OFFICIAL]](#src-a2a-official) |
 | **Managed Flex Gateway** | Gateway mode required for Agent Broker deployment | [[SRC-ORCHESTRATE]](#src-orchestrate) |
-| **MCP (Model Context Protocol)** | Standard protocol for connecting AI models to external tools and data | [[SRC-ORCHESTRATE](#src-orchestrate), [SRC-DOCS](#src-docs)] |
+| **MCP (Model Context Protocol)** | Open-source standard (by Anthropic) for connecting AI applications to external data sources, tools, and workflows. "USB-C port for AI applications" | [[SRC-MCP-OFFICIAL](#src-mcp-official), [SRC-ORCHESTRATE](#src-orchestrate)] |
 | **MCP Server** | Server implementing MCP to expose specific tools to agents | [[SRC-DISCOVER](#src-discover), [SRC-GOVERN](#src-govern)] |
 | **MuleChain Connectors** | Connectors for building agentic workflows and connecting to LLMs | [[SRC-GOVERN]](#src-govern) |
 | **MuleSoft Vibes** | AI capability in ACB enabling natural language asset discovery | [[SRC-DISCOVER]](#src-discover) |
@@ -1468,3 +1583,48 @@ Legend: ✓ = Mentioned, ✓✓ = Moderate coverage, ✓✓✓ = Deep coverage
 *Document generated based on MuleSoft Agent Fabric source materials. Last updated: December 2025.*
 
 *All claims in this compendium are attributed to their source materials using the [SRC-ID] citation format. For official and current information, refer to the MuleSoft documentation at https://docs.mulesoft.com/agent-fabric/.*
+
+---
+
+### Document Verification Notes
+
+**A2A Protocol Verification (December 13, 2025)**
+
+This document has been verified against the official A2A Protocol documentation at [a2a-protocol.org](https://a2a-protocol.org/latest/) and the official GitHub repository at [github.com/a2aproject/A2A](https://github.com/a2aproject/A2A).
+
+**Key Corrections Applied:**
+
+| Correction | Previous Value | Corrected Value | Source |
+|------------|----------------|-----------------|--------|
+| Agent Card Discovery URL | `/.well-known/agent-card` | `/.well-known/agent-card.json` | [A2A Agent Discovery](https://a2a-protocol.org/latest/topics/agent-discovery/) |
+| Protocol Origin | Not specified | Google → Linux Foundation | [A2A Official Docs](https://a2a-protocol.org/latest/) |
+| Interaction Modes | "Prompt/Response" only | Sync, Streaming (SSE), Async Push | [A2A Specification](https://a2a-protocol.org/latest/specification/) |
+| Agent Card Structure | Basic fields | Full structure with Skills, Authentication, Capabilities | [A2A Agent Discovery](https://a2a-protocol.org/latest/topics/agent-discovery/) |
+| Related Protocols | Not mentioned | IBM ACP (incorporated), Cisco agntcy | [A2A Official Docs](https://a2a-protocol.org/latest/) |
+| Official SDKs | Not mentioned | Python, Go, JS, Java, .NET | [A2A GitHub](https://github.com/a2aproject/A2A) |
+
+**A2A Protocol Version:** v0.3.0 (July 2025)
+**GitHub Stats:** 21k+ stars, 131+ contributors
+
+---
+
+**MuleSoft A2A Connector Verification (December 13, 2025)**
+
+| Property | Value | Source |
+|----------|-------|--------|
+| **Connector Name** | A2A Connector | [MuleSoft Docs](https://docs.mulesoft.com/a2a-connector/latest/) |
+| **Current Version** | 0.4.0-BETA | [MuleSoft Docs](https://docs.mulesoft.com/a2a-connector/latest/) |
+| **Mule Version** | Mule 4 | [Anypoint Exchange](https://www.mulesoft.com/exchange/com.mulesoft.connectors/mule4-a2a-connector/) |
+| **Status** | Beta | [MuleSoft Docs](https://docs.mulesoft.com/a2a-connector/latest/) |
+
+**Note:** The connector is in BETA status. Features and API may change before general availability.
+
+---
+
+**Document Version History:**
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | December 2025 | Initial document based on MuleSoft Agent Fabric sources |
+| 1.1 | December 13, 2025 | Verified against A2A Protocol official docs; Added MuleSoft A2A Connector version (0.4.0-BETA); Updated Agent Card discovery URL; Added IBM ACP, Cisco agntcy, Google ADK references; Added official A2A SDKs |
+| 1.1 | December 14, 2025 | Added MuleSoft MCP Connector version (1.3) with transport methods (Streamable HTTP, SSE); Added MCP client/server capabilities |
