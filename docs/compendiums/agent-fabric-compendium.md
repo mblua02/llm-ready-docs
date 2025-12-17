@@ -252,6 +252,7 @@ The registry supports both, enabling architects to build systems where dynamic a
 3. Select the specific **Asset Type**: LLM, MCP Server, or Agent
 4. Configure the asset metadata:
    - **For Agents:** Select method (A2A card), Platform (MuleSoft, Agentforce, Other)
+     - **A2A Agent Card requirement:** The uploaded Agent Card must include the root `url` field (service endpoint). If missing, Exchange validation fails (e.g., `required key [url] not found`).
    - **For LLMs:** Select provider (e.g., OpenAI), Lifecycle State (Stable/Development)
    - **For MCP Servers:** Upload MCP schema, select platform
 5. Click **"Publish"** to make the asset discoverable
@@ -1107,6 +1108,8 @@ Request Flow:
 4. Broker synthesizes into final output
 
 Agent Card Structure (per a2a-protocol.org specification):
+> **Required fields (A2A Agent Card):** `name`, `url`, `version`  
+> **Nota (rioplatense):** el `url` requerido es el endpoint del servicio (p.ej. `/a2a`). Si falta, Exchange rechaza el asset con errores del estilo `required key [url] not found`.
 {
   "name": "Badging Agent",
   "description": "Handles employee badge requests",
