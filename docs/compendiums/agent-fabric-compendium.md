@@ -1,7 +1,7 @@
 # MuleSoft Agent Fabric Compendium
 
-**Document Version:** 1.1
-**Last Updated:** December 14, 2025
+**Document Version:** 1.2
+**Last Updated:** December 17, 2025
 
 ## Table of Contents
 
@@ -841,7 +841,7 @@ flowchart LR
 - **Discovery:** Agent Cards (JSON) at `/.well-known/agent-card.json` (per RFC 8615)
 - **Technical Implementation:** JSON-RPC 2.0 over HTTP(S)
 - **Support:** Anypoint Connector for A2A, governed by Flex Gateway
-- **MuleSoft A2A Connector:** Version 0.4.0-BETA (for Mule 4)
+- **MuleSoft A2A Connector:** Version 1.0.0 (Mule 4.9.8+, OpenJDK 17, A2A protocol 0.3.0) [[SRC-MULESOFT-A2A-RN](#src-mulesoft-a2a-rn)]
 - **Ecosystem:** IBM ACP (incorporated), Cisco agntcy (leverages), Google ADK (build with)
 - **A2A Protocol Version:** v0.3.0 (July 2025)
 
@@ -1495,6 +1495,7 @@ sequenceDiagram
 |-----------|-------|-----|------|
 | <span id="src-mulesoft-a2a">**[SRC-MULESOFT-A2A]**</span> | A2A Connector Documentation | https://docs.mulesoft.com/a2a-connector/latest/ | Official Docs |
 | **[SRC-MULESOFT-A2A]** | A2A Connector - Anypoint Exchange | https://www.mulesoft.com/exchange/com.mulesoft.connectors/mule4-a2a-connector/ | Exchange |
+| <span id="src-mulesoft-a2a-rn">**[SRC-MULESOFT-A2A-RN]**</span> | A2A Connector Release Notes (Mule 4) | https://docs.mulesoft.com/release-notes/connector/a2a-connector-release-notes-mule-4 | Release Notes |
 
 #### MuleSoft MCP Connector Sources (Verified December 2025)
 
@@ -1516,7 +1517,7 @@ sequenceDiagram
 
 > **Note:** The A2A Protocol was originally developed by Google and is now donated to the Linux Foundation as an open-source project (Apache License 2.0). Current version: v0.3.0 (July 2025). The protocol has 21k+ stars on GitHub and 131+ contributors.
 >
-> **MuleSoft A2A Connector:** Version 0.4.0-BETA (for Mule 4). This is a beta release providing support for the Agent2Agent protocol in MuleSoft applications.
+> **MuleSoft A2A Connector:** Version 1.0.0 (December 17, 2025). Adds clearer client vs server naming, new client operations (Send Stream Message, Task Resubscribe), new server operations (Send Push Notification, Update Task Artifact, Update Task Status), a new server source (On Task Stream Listener), server-side task cancellation (`tasks/cancel`), and updated server connection configuration for agent cards (Card Json / Card Path). Also adds new errors (`A2A:TASK_NOT_CANCELABLE`, `A2A:UNSUPPORTED_OPERATION`) and removes `A2A:TASK_ALREADY_COMPLETED` as a global error. [[SRC-MULESOFT-A2A-RN](#src-mulesoft-a2a-rn)]
 
 ### 13.2 Source Cross-Reference Table
 
@@ -1545,7 +1546,7 @@ Legend: ✓ = Mentioned, ✓✓ = Moderate coverage, ✓✓✓ = Deep coverage
 | Term | Definition | Source |
 |------|------------|--------|
 | **A2A (Agent-to-Agent)** | An open protocol (originally by Google, now Linux Foundation) using JSON-RPC 2.0 over HTTP(S) for peer-to-peer communication between opaque AI agents. Supports sync, streaming (SSE), and async push notifications. Discovery via Agent Cards at `/.well-known/agent-card.json` | [[SRC-A2A-OFFICIAL]](#src-a2a-official) |
-| **A2A Connector (MuleSoft)** | MuleSoft connector for implementing A2A protocol in Mule 4 applications. Current version: 0.4.0-BETA | [[SRC-MULESOFT-A2A]](#src-mulesoft-a2a) |
+| **A2A Connector (MuleSoft)** | MuleSoft connector for implementing A2A protocol in Mule 4 applications. Current version: 1.0.0 (December 17, 2025) | [[SRC-MULESOFT-A2A](#src-mulesoft-a2a), [SRC-MULESOFT-A2A-RN](#src-mulesoft-a2a-rn)] |
 | **MCP Connector (MuleSoft)** | MuleSoft connector enabling MCP server/client capabilities in Mule 4.9.6+ apps. Current version: 1.3. Supports Streamable HTTP and SSE transport | [[SRC-MULESOFT-MCP]](#src-mulesoft-mcp) |
 | **A2A SDK** | Official Software Development Kits for implementing A2A protocol in Python, Go, JavaScript, Java, and C#/.NET | [[SRC-A2A-OFFICIAL]](#src-a2a-official) |
 | **Agent Broker** | An intelligent routing service that uses LLM to coordinate task delegation across agents and tools | [[SRC-ORCHESTRATE](#src-orchestrate), [SRC-DOCS](#src-docs)] |
@@ -1611,16 +1612,18 @@ This document has been verified against the official A2A Protocol documentation 
 
 ---
 
-**MuleSoft A2A Connector Verification (December 13, 2025)**
+**MuleSoft A2A Connector Verification (December 17, 2025)**
 
 | Property | Value | Source |
 |----------|-------|--------|
 | **Connector Name** | A2A Connector | [MuleSoft Docs](https://docs.mulesoft.com/a2a-connector/latest/) |
-| **Current Version** | 0.4.0-BETA | [MuleSoft Docs](https://docs.mulesoft.com/a2a-connector/latest/) |
+| **Current Version** | 1.0.0 | [A2A Connector Release Notes](https://docs.mulesoft.com/release-notes/connector/a2a-connector-release-notes-mule-4#1-0-0) |
 | **Mule Version** | Mule 4 | [Anypoint Exchange](https://www.mulesoft.com/exchange/com.mulesoft.connectors/mule4-a2a-connector/) |
-| **Status** | Beta | [MuleSoft Docs](https://docs.mulesoft.com/a2a-connector/latest/) |
+| **A2A Protocol Version** | 0.3.0 | [A2A Connector Release Notes](https://docs.mulesoft.com/release-notes/connector/a2a-connector-release-notes-mule-4#1-0-0) |
+| **OpenJDK** | 17 | [A2A Connector Release Notes](https://docs.mulesoft.com/release-notes/connector/a2a-connector-release-notes-mule-4#1-0-0) |
+| **Minimum Mule Runtime** | 4.9.8+ | [A2A Connector Release Notes](https://docs.mulesoft.com/release-notes/connector/a2a-connector-release-notes-mule-4#1-0-0) |
 
-**Note:** The connector is in BETA status. Features and API may change before general availability.
+**Note:** The connector has a 1.0.0 release published on December 17, 2025. Refer to the release notes for the authoritative list of operations/sources and compatibility. [[SRC-MULESOFT-A2A-RN](#src-mulesoft-a2a-rn)]
 
 ---
 
@@ -1631,3 +1634,4 @@ This document has been verified against the official A2A Protocol documentation 
 | 1.0 | December 2025 | Initial document based on MuleSoft Agent Fabric sources |
 | 1.1 | December 13, 2025 | Verified against A2A Protocol official docs; Added MuleSoft A2A Connector version (0.4.0-BETA); Updated Agent Card discovery URL; Added IBM ACP, Cisco agntcy, Google ADK references; Added official A2A SDKs |
 | 1.1 | December 14, 2025 | Added MuleSoft MCP Connector version (1.3) with transport methods (Streamable HTTP, SSE); Added MCP client/server capabilities |
+| 1.2 | December 17, 2025 | Updated MuleSoft A2A Connector references to 1.0.0; Added A2A Connector Release Notes as a source; Captured new client/server operations and server stream listener source |
